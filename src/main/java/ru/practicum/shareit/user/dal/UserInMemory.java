@@ -1,6 +1,7 @@
 package ru.practicum.shareit.user.dal;
 
 import org.springframework.stereotype.Repository;
+import ru.practicum.shareit.exception.DuplicateDataException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.user.User;
 
@@ -25,7 +26,7 @@ public class UserInMemory implements UserStorage {
     @Override
     public User create(User user) {
         if (users.containsValue(user)) {
-            throw new NotFoundException("email already exists");
+            throw new DuplicateDataException("email already exists");
         }
         user.setId(setUserId());
         users.put(user.getId(), user);
@@ -36,7 +37,7 @@ public class UserInMemory implements UserStorage {
     public User update(User user) {
         for (User existUser : users.values()) {
             if (existUser.equals(user) && !Objects.equals(existUser.getId(), user.getId())) {
-                throw new NotFoundException("email already exists");
+                throw new DuplicateDataException("email already exists");
             }
         }
         return users.put(user.getId(), user);
