@@ -7,10 +7,7 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.dal.UserStorage;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Repository
 @RequiredArgsConstructor
@@ -48,8 +45,20 @@ public class ItemInMemory implements ItemStorage {
     }
 
     @Override
-    public List<Item> findByQueryText(String text) {
-        return null;
+    public List<Item> findByQueryText(Set<String> strings) {
+        List<Item> result = new ArrayList<>();
+        for (Item item : items.values()) {
+            if(item.getAvailable().equals(false)) {
+                continue;
+            }
+            for (String string : strings) {
+                if (item.getName().matches("(?i)" + string)
+                        || item.getDescription().matches("(?i)" + string)) {
+                    result.add(item);
+                }
+            }
+        }
+        return result;
     }
 
     @Override
