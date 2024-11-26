@@ -44,7 +44,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDto delete(Long id){
+    public UserDto delete(Long id) {
         User user = userStorage.delete(id);
         return UserMapper.mapToUserDto(user);
     }

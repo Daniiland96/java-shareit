@@ -48,7 +48,7 @@ public class ItemInMemory implements ItemStorage {
     public List<Item> findByQueryText(Set<String> strings) {
         List<Item> result = new ArrayList<>();
         for (Item item : items.values()) {
-            if(item.getAvailable().equals(false)) {
+            if (item.getAvailable().equals(false)) {
                 continue;
             }
             for (String string : strings) {
