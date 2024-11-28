@@ -27,7 +27,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto update(Long userId, Long itemId, UpdateItemRequest itemRequest) {
         Item item = itemStorage.findItemById(itemId);
-        if (!item.getOwner().getId().equals(userId)) {
+        if (item.getOwner() == null || !item.getOwner().getId().equals(userId)) {
             throw new AccessRightsException("no rights to update item");
         }
         ItemMapper.updateUserFields(itemRequest, item);

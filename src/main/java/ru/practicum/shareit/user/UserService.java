@@ -10,7 +10,7 @@ public interface UserService {
 
     Collection<UserDto> findUsers();
 
-    UserDto create(User user);
+    UserDto create(UserDto userDto);
 
     UserDto update(Long id, UpdateUserRequest userRequest);
 

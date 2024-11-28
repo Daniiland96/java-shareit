@@ -8,6 +8,10 @@ public class UserMapper {
         return new UserDto(user.getId(), user.getEmail(), user.getName());
     }
 
+    public static User mapToUser(UserDto userDto) {
+        return new User(userDto.getId(), userDto.getEmail(), userDto.getName());
+    }
+
     public static User updateUserFields(UpdateUserRequest userRequest, User user) {
         if (userRequest.getEmail() != null) {
             user.setEmail(userRequest.getEmail());
