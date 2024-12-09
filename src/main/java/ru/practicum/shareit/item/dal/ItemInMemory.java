@@ -5,21 +5,22 @@ import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
-import ru.practicum.shareit.user.dal.UserStorage;
+import ru.practicum.shareit.user.dal.UserRepository;
 
 import java.util.*;
 
 @Repository
 @RequiredArgsConstructor
 public class ItemInMemory implements ItemStorage {
-    private final UserStorage userStorage;
+    private final UserRepository userRepository;
 
     private Long id = 0L;
     private Map<Long, Item> items = new HashMap<>();
 
     @Override
     public Item create(Long userId, Item item) {
-        User user = userStorage.findUserById(userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("user not found"));
         item.setId(setItemId());
         item.setOwner(user);
         items.put(item.getId(), item);
