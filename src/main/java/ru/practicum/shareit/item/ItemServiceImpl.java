@@ -2,48 +2,59 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.AccessRightsException;
-import ru.practicum.shareit.item.dal.ItemStorage;
+import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.item.dal.ItemRepository;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemMapper;
 import ru.practicum.shareit.item.dto.UpdateItemRequest;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.dal.UserRepository;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
-    private final ItemStorage itemStorage;
+    private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
 
     @Override
+    @Transactional
     public ItemDto create(Long userId, ItemDto itemDto) {
-        Item item = ItemMapper.mapToItem(itemDto);
-        itemStorage.create(userId, item);
-        return ItemMapper.mapToItemDto(item);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("user not found"));
+        Item item = ItemMapper.mapToItem(itemDto, user);
+        return ItemMapper.mapToItemDto(itemRepository.save(item));
     }
 
     @Override
+    @Transactional
     public ItemDto update(Long userId, Long itemId, UpdateItemRequest itemRequest) {
-        Item item = itemStorage.findItemById(itemId);
-        if (item.getOwner() == null || !item.getOwner().getId().equals(userId)) {
+        Item item = itemRepository.findByIdWithUser(itemId)
+                .orElseThrow(() -> new NotFoundException("item not found"));
+        if (item.getUser() == null || !item.getUser().getId().equals(userId)) {
             throw new AccessRightsException("no rights to update item");
         }
         ItemMapper.updateUserFields(itemRequest, item);
-        itemStorage.update(item);
-        return ItemMapper.mapToItemDto(item);
+        return ItemMapper.mapToItemDto(itemRepository.save(item));
     }
 
     @Override
     public ItemDto findItemById(Long itemId) {
-        Item item = itemStorage.findItemById(itemId);
+        Item item = itemRepository.findByIdWithUser(itemId)
+                .orElseThrow(() -> new NotFoundException("item not found"));
         return ItemMapper.mapToItemDto(item);
     }
 
     @Override
     public Collection<ItemDto> findAllUserItems(Long userId) {
-        return itemStorage.findAllUserItems(userId)
+        return itemRepository.findAllWithUserByUserId(userId)
                 .stream()
                 .map(ItemMapper::mapToItemDto)
                 .toList();
@@ -54,21 +65,16 @@ public class ItemServiceImpl implements ItemService {
         if (text.isBlank()) {
             return Collections.EMPTY_LIST;
         }
-        String[] strings = text.trim().split("[ ,.]");
-        Set<String> stringsSet = Arrays.stream(strings)
-                .filter(str -> !str.equals(" "))
-                .collect(Collectors.toSet());
-        List<Item> items = itemStorage.findByQueryText(stringsSet);
-        return items.stream().map(ItemMapper::mapToItemDto).toList();
+        List<Item> items = itemRepository.findByQueryText(text);
+        return ItemMapper.mapToItemDto(items);
     }
 
     @Override
+    @Transactional
     public ItemDto delete(Long userId, Long itemId) {
-        Item item = itemStorage.findItemById(itemId);
-        if (!item.getOwner().getId().equals(userId)) {
-            throw new AccessRightsException("no rights to delete item");
-        }
-        itemStorage.delete(itemId);
+        Item item = itemRepository.findByIdAndUserIdWithUser(userId, itemId)
+                .orElseThrow(() -> new AccessRightsException("no rights to delete item"));
+        itemRepository.deleteById(itemId);
         return ItemMapper.mapToItemDto(item);
     }
 }
