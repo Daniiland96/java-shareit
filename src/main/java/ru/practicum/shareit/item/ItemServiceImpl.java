@@ -49,6 +49,8 @@ public class ItemServiceImpl implements ItemService {
     public ItemDto findItemById(Long itemId) {
         Item item = itemRepository.findByIdWithUser(itemId)
                 .orElseThrow(() -> new NotFoundException("item not found"));
+        User user = item.getUser();
+        System.out.println(user);
         return ItemMapper.mapToItemDto(item);
     }
 

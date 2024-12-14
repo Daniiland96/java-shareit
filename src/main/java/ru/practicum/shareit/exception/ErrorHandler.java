@@ -12,7 +12,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class ErrorHandler {
     @ExceptionHandler({
             MethodArgumentNotValidException.class,
-            MissingRequestHeaderException.class
+            MissingRequestHeaderException.class,
+            ValidationException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidationException(final Exception e) {
@@ -25,7 +26,10 @@ public class ErrorHandler {
         return new ErrorResponse(e.getMessage());
     }
 
-    @ExceptionHandler({DataIntegrityViolationException.class})
+    @ExceptionHandler({
+            DataIntegrityViolationException.class,
+            DuplicateDataException.class
+    })
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleDataException(final Exception e) {
         return new ErrorResponse(e.getMessage());
@@ -34,6 +38,12 @@ public class ErrorHandler {
     @ExceptionHandler({AccessRightsException.class})
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ErrorResponse handleAccessRightsException(final Exception e) {
+        return new ErrorResponse(e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleRuntimeException(final RuntimeException e) {
         return new ErrorResponse(e.getMessage());
     }
 }
