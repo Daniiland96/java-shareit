@@ -22,7 +22,7 @@ public class Item {
     private String name;
     private String description;
     private Boolean available;
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
     @Transient

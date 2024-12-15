@@ -3,19 +3,21 @@ package ru.practicum.shareit.item;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.booking.dal.BookingRepository;
+import ru.practicum.shareit.booking.model.BookingDates;
 import ru.practicum.shareit.exception.AccessRightsException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.dal.ItemRepository;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemMapper;
+import ru.practicum.shareit.item.dto.ItemWithDateDto;
 import ru.practicum.shareit.item.dto.UpdateItemRequest;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.dal.UserRepository;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 @Transactional(readOnly = true)
@@ -23,6 +25,7 @@ import java.util.List;
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
 
     @Override
     @Transactional
@@ -36,7 +39,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public ItemDto update(Long userId, Long itemId, UpdateItemRequest itemRequest) {
-        Item item = itemRepository.findByIdWithUser(itemId)
+        Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("item not found"));
         if (item.getUser() == null || !item.getUser().getId().equals(userId)) {
             throw new AccessRightsException("no rights to update item");
@@ -46,20 +49,20 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemDto findItemById(Long itemId) {
-        Item item = itemRepository.findByIdWithUser(itemId)
+    public ItemWithDateDto findItemById(Long itemId) {
+        Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("item not found"));
-        User user = item.getUser();
-        System.out.println(user);
-        return ItemMapper.mapToItemDto(item);
+        BookingDates bookingDates = bookingRepository.findBookingDates(itemId, LocalDateTime.now());
+        return ItemMapper.mapToItemWithDateDto(item, bookingDates);
     }
 
     @Override
-    public Collection<ItemDto> findAllUserItems(Long userId) {
-        return itemRepository.findAllWithUserByUserId(userId)
-                .stream()
-                .map(ItemMapper::mapToItemDto)
-                .toList();
+    public Collection<ItemWithDateDto> findAllUserItems(Long userId) {
+        List<Item> items = itemRepository.findAllByUserId(userId);
+        List<BookingDates> listDates = bookingRepository.findBookingsDatesOfUser(userId, LocalDateTime.now());
+        Map<Long, BookingDates> dates = new HashMap<>();
+        listDates.stream().peek(bookingDate -> dates.put(bookingDate.getItemId(), bookingDate));
+        return ItemMapper.mapToItemWithDateDto(items, dates);
     }
 
     @Override
@@ -74,8 +77,11 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public ItemDto delete(Long userId, Long itemId) {
-        Item item = itemRepository.findByIdAndUserIdWithUser(userId, itemId)
-                .orElseThrow(() -> new AccessRightsException("no rights to delete item"));
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("item not found"));
+        if (!Objects.equals(item.getUser().getId(), userId)) {
+            throw new AccessRightsException("no rights to delete item");
+        }
         itemRepository.deleteById(itemId);
         return ItemMapper.mapToItemDto(item);
     }

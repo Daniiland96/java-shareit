@@ -8,6 +8,7 @@ import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingMapper;
 import ru.practicum.shareit.booking.dto.CreateBookingDto;
 import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.BookingDates;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.exception.AccessRightsException;
 import ru.practicum.shareit.exception.DuplicateDataException;
@@ -18,6 +19,7 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.dal.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -36,14 +38,14 @@ public class BookingServiceImpl implements BookingService {
             throw new ValidationException("start date booking equal end date");
         }
 
-        Item item = itemRepository.findByIdWithUser(bookingDto.getItemId())
+        User booker = userRepository.findById(bookerId)
+                .orElseThrow(() -> new NotFoundException("booker not found"));
+
+        Item item = itemRepository.findById(bookingDto.getItemId())
                 .orElseThrow(() -> new NotFoundException("item not found"));
         if (!item.getAvailable()) {
             throw new ValidationException("item not available");
         }
-
-        User booker = userRepository.findById(bookerId)
-                .orElseThrow(() -> new NotFoundException("booker not found"));
 
         List<Booking> overlappingBookings = bookingRepository
                 .findBookingsWithOverlappingDateRange(item.getId(), bookingDto.getStart(), bookingDto.getEnd());
@@ -56,6 +58,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingDto updateStatus(Long userId, Long bookingId, Boolean approved) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("booking not found"));
@@ -80,5 +83,55 @@ public class BookingServiceImpl implements BookingService {
             return BookingMapper.mapToBookingDto(bookingRepository.save(booking));
         }
         throw new AccessRightsException("no right to update booking");
+    }
+
+    @Override
+    public BookingDto findById(Long userId, Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("booking not found"));
+        if (booking.getItem().getUser().getId().equals(userId) || booking.getBooker().getId().equals(userId)) {
+            return BookingMapper.mapToBookingDto(booking);
+        }
+        throw new AccessRightsException("no right to find this booking");
+    }
+
+    @Override
+    public List<BookingDto> findAllBookingsOfBooker(Long bookerId, String state) {
+        User booker = userRepository.findById(bookerId)
+                .orElseThrow(() -> new NotFoundException("booker not found"));
+        List<Booking> bookings = switch (state) {
+            case "ALL" -> bookingRepository.findByBookerIdOrderByStartDesc(bookerId);
+            case "CURRENT" -> bookingRepository.findByBookerIdAndCurrentBookings(bookerId, LocalDateTime.now());
+            case "PAST" ->
+                    bookingRepository.findByBookerIdAndEndIsBeforeOrderByStartDesc(bookerId, LocalDateTime.now());
+            case "FUTURE" ->
+                    bookingRepository.findByBookerIdAndStartIsAfterOrderByStartDesc(bookerId, LocalDateTime.now());
+            case "WAITING" ->
+                    bookingRepository.findByBookerIdAndStatusOrderByStartDesc(bookerId, BookingStatus.WAITING);
+            case "REJECTED" ->
+                    bookingRepository.findByBookerIdAndStatusOrderByStartDesc(bookerId, BookingStatus.REJECTED);
+            default -> throw new ValidationException("wrong state value");
+        };
+        return BookingMapper.mapToBookingDto(bookings);
+    }
+
+    @Override
+    public List<BookingDto> findAllBookingsOfOwner(Long ownerId, String state) {
+        User booker = userRepository.findById(ownerId)
+                .orElseThrow(() -> new NotFoundException("owner not found"));
+        List<Booking> bookings = switch (state) {
+            case "ALL" -> bookingRepository.findByItemUserIdOrderByStartDesc(ownerId);
+            case "CURRENT" -> bookingRepository.findByItemUserIdAndCurrentBookings(ownerId, LocalDateTime.now());
+            case "PAST" ->
+                    bookingRepository.findByItemUserIdAndEndIsBeforeOrderByStartDesc(ownerId, LocalDateTime.now());
+            case "FUTURE" ->
+                    bookingRepository.findByItemUserIdAndStartIsAfterOrderByStartDesc(ownerId, LocalDateTime.now());
+            case "WAITING" ->
+                    bookingRepository.findByItemUserIdAndStatusOrderByStartDesc(ownerId, BookingStatus.WAITING);
+            case "REJECTED" ->
+                    bookingRepository.findByItemUserIdAndStatusOrderByStartDesc(ownerId, BookingStatus.REJECTED);
+            default -> throw new ValidationException("wrong state value");
+        };
+        return BookingMapper.mapToBookingDto(bookings);
     }
 }
