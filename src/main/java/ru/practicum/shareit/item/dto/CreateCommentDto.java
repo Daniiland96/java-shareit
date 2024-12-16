@@ -1,11 +1,9 @@
 package ru.practicum.shareit.item.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 
-@Data
-@AllArgsConstructor
+@Getter
 public class CreateCommentDto {
     @NotBlank(message = "text cannot be null, empty or blank")
     private String text;

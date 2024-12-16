@@ -1,8 +1,12 @@
 package ru.practicum.shareit.item.dto;
 
-import lombok.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @ToString
 @EqualsAndHashCode
@@ -16,4 +20,5 @@ public class ItemWithDateDto {
     private Long userId;
     private LocalDateTime lastBooking;
     private LocalDateTime nextBooking;
+    private List<CommentDto> comments;
 }

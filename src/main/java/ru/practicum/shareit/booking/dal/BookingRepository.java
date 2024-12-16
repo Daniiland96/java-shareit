@@ -13,29 +13,29 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("select b from Booking b where b.status = 'APPROVED' " +
             "and b.item.id = ?1 " +
             "and(?2 <= b.end and ?3 >= b.start)")
-    List<Booking> findBookingsWithOverlappingDateRange(Long itemId, LocalDateTime start, LocalDateTime end);
+    List<Booking> findAllBookingsWithOverlappingDateRange(Long itemId, LocalDateTime start, LocalDateTime end);
 
-    List<Booking> findByBookerIdOrderByStartDesc(Long bookerId);
+    List<Booking> findAllByBookerIdOrderByStartDesc(Long bookerId);
 
     @Query("select b from Booking b where b.booker.id = ?1 and b.start <= ?2 and b.end > ?2 order by b.start desc")
-    List<Booking> findByBookerIdAndCurrentBookings(Long bookerId, LocalDateTime time);
+    List<Booking> findAllByBookerIdAndCurrentBookings(Long bookerId, LocalDateTime time);
 
-    List<Booking> findByBookerIdAndEndIsBeforeOrderByStartDesc(Long bookerId, LocalDateTime time);
+    List<Booking> findAllByBookerIdAndEndIsBeforeOrderByStartDesc(Long bookerId, LocalDateTime time);
 
-    List<Booking> findByBookerIdAndStartIsAfterOrderByStartDesc(Long bookerId, LocalDateTime time);
+    List<Booking> findAllByBookerIdAndStartIsAfterOrderByStartDesc(Long bookerId, LocalDateTime time);
 
-    List<Booking> findByBookerIdAndStatusOrderByStartDesc(Long bookerId, BookingStatus status);
+    List<Booking> findAllByBookerIdAndStatusOrderByStartDesc(Long bookerId, BookingStatus status);
 
-    List<Booking> findByItemUserIdOrderByStartDesc(Long ownerId);
+    List<Booking> findAllByItemUserIdOrderByStartDesc(Long ownerId);
 
     @Query("select b from Booking b where b.item.user.id = ?1 and b.start <= ?2 and b.end > ?2 order by b.start desc")
-    List<Booking> findByItemUserIdAndCurrentBookings(Long bookerId, LocalDateTime time);
+    List<Booking> findAllByItemUserIdAndCurrentBookings(Long bookerId, LocalDateTime time);
 
-    List<Booking> findByItemUserIdAndEndIsBeforeOrderByStartDesc(Long bookerId, LocalDateTime time);
+    List<Booking> findAllByItemUserIdAndEndIsBeforeOrderByStartDesc(Long bookerId, LocalDateTime time);
 
-    List<Booking> findByItemUserIdAndStartIsAfterOrderByStartDesc(Long bookerId, LocalDateTime time);
+    List<Booking> findAllByItemUserIdAndStartIsAfterOrderByStartDesc(Long bookerId, LocalDateTime time);
 
-    List<Booking> findByItemUserIdAndStatusOrderByStartDesc(Long bookerId, BookingStatus status);
+    List<Booking> findAllByItemUserIdAndStatusOrderByStartDesc(Long bookerId, BookingStatus status);
 
     @Query("select new ru.practicum.shareit.booking.model.BookingDates(b1.item.id, max(b1.end), min(b2.start)) from Booking b1 " +
             "inner join Booking b2 on b1.item.id = b2.item.id " +
@@ -45,7 +45,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("select new ru.practicum.shareit.booking.model.BookingDates(b1.item.id, max(b1.end), min(b2.start)) from Booking b1 " +
             "inner join Booking b2 on b1.item.id = b2.item.id " +
-            "where b1.item.user.id = ?1 and (b1.status = 'APPROVED' and b1.end <= ?2) and (b2.status = 'APPROVED' and b2.start >= ?2) " +
-            "group by b1.item.id")
-    List<BookingDates> findBookingsDatesOfUser(Long userId, LocalDateTime time);
+            "where b1.item.user.id = ?1 and (b1.status = 'APPROVED' and b1.end <= ?2) and (b2.status = 'APPROVED' " +
+            "and b2.start >= ?2) group by b1.item.id")
+    List<BookingDates> findAllBookingsDatesOfUser(Long userId, LocalDateTime time);
+
+    List<Booking> findAllByBookerIdAndItemIdAndStatusAndEndIsBefore(Long bookerId, Long itemId, BookingStatus status, LocalDateTime time);
 }

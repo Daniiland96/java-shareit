@@ -1,7 +1,9 @@
 package ru.practicum.shareit.user;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * TODO Sprint add-controllers.
@@ -10,7 +12,6 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-//@EqualsAndHashCode(of = "email")
 @Entity
 @Table(name = "users")
 public class User {
