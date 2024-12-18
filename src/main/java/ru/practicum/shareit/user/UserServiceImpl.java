@@ -2,7 +2,9 @@ package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.user.dal.UserStorage;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.user.dal.UserRepository;
 import ru.practicum.shareit.user.dto.UpdateUserRequest;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserMapper;
@@ -10,43 +12,42 @@ import ru.practicum.shareit.user.dto.UserMapper;
 import java.util.Collection;
 
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    private final UserStorage userStorage;
+    private final UserRepository userRepository;
 
     @Override
     public UserDto findUserById(Long id) {
-        User user = userStorage.findUserById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("user not found"));
         return UserMapper.mapToUserDto(user);
     }
 
     @Override
     public Collection<UserDto> findUsers() {
-        return userStorage.findUsers().stream()
-                .map(UserMapper::mapToUserDto)
-                .toList();
+        return UserMapper.mapToUserDto(userRepository.findAll());
     }
 
     @Override
+    @Transactional
     public UserDto create(UserDto userDto) {
         User user = UserMapper.mapToUser(userDto);
-        userStorage.create(user);
-        return UserMapper.mapToUserDto(user);
+        return UserMapper.mapToUserDto(userRepository.save(user));
     }
 
     @Override
+    @Transactional
     public UserDto update(Long id, UpdateUserRequest userRequest) {
-        User user = userStorage.findUserById(id);
-        User updateUser = new User(user.getId(), user.getEmail(), user.getName()); // Создаем новый объект, чтобы не изменить объект в хранилище
-        // до проверки повторения email, с появление БД, эта строчка уйдет.
-        UserMapper.updateUserFields(userRequest, updateUser);
-        userStorage.update(updateUser);
-        return UserMapper.mapToUserDto(updateUser);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("user not found"));
+        UserMapper.updateUserFields(userRequest, user);
+        return UserMapper.mapToUserDto(userRepository.save(user));
     }
 
     @Override
-    public UserDto delete(Long id) {
-        User user = userStorage.delete(id);
-        return UserMapper.mapToUserDto(user);
+    @Transactional
+    public void delete(Long id) {
+        userRepository.deleteById(id);
     }
 }

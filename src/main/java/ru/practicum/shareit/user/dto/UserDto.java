@@ -9,9 +9,9 @@ import lombok.Data;
 @AllArgsConstructor
 public class UserDto {
     private Long id;
+    @NotBlank(message = "name cannot be null, empty or blank")
+    private String name;
     @NotBlank(message = "email cannot be null, empty or blank")
     @Email(message = "email should be valid")
     private String email;
-    @NotBlank(message = "name cannot be null, empty or blank")
-    private String name;
 }
