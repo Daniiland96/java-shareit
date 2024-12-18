@@ -98,10 +98,11 @@ public class ItemMapper {
 
         Map<Long, List<CommentDto>> commentMap = new HashMap<>();
         for (CommentDto dto : comments) {
-            if (!commentMap.containsKey(dto.getItemId())) {
-                commentMap.put(dto.getItemId(), new ArrayList<>());
-            }
-            commentMap.get(dto.getItemId()).add(dto);
+            commentMap.merge(dto.getItemId(), List.of(dto), (oldList, newList) -> {
+                List<CommentDto> resultList = new ArrayList<>(oldList);
+                resultList.addAll(newList);
+                return resultList;
+            });
         }
 
         Map<Long, BookingDates> dates = listDates.stream()

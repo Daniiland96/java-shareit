@@ -9,6 +9,7 @@ import ru.practicum.shareit.booking.dto.BookingMapper;
 import ru.practicum.shareit.booking.dto.CreateBookingDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
+import ru.practicum.shareit.booking.model.StateRequest;
 import ru.practicum.shareit.exception.AccessRightsException;
 import ru.practicum.shareit.exception.DuplicateDataException;
 import ru.practicum.shareit.exception.NotFoundException;
@@ -21,6 +22,7 @@ import ru.practicum.shareit.user.dal.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
@@ -61,7 +63,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto updateStatus(Long userId, Long bookingId, Boolean approved) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("booking not found"));
-        if (Objects.equals(booking.getItem().getUser().getId(), userId) && approved) {
+        if (checkIdOfItemOwner(booking, userId) && approved) {
             List<Booking> overlappingBookings = bookingRepository.findAllBookingsWithOverlappingDateRange(
                     booking.getItem().getId(),
                     booking.getStart(),
@@ -73,7 +75,7 @@ public class BookingServiceImpl implements BookingService {
             booking.setStatus(BookingStatus.APPROVED);
             return BookingMapper.mapToBookingDto(bookingRepository.save(booking));
         }
-        if (Objects.equals(booking.getItem().getUser().getId(), userId) && !approved) {
+        if (checkIdOfItemOwner(booking, userId) && !approved) {
             booking.setStatus(BookingStatus.REJECTED);
             return BookingMapper.mapToBookingDto(bookingRepository.save(booking));
         }
@@ -88,49 +90,55 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto findById(Long userId, Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("booking not found"));
-        if (booking.getItem().getUser().getId().equals(userId) || booking.getBooker().getId().equals(userId)) {
+        if (checkIdOfItemOwner(booking, userId) || booking.getBooker().getId().equals(userId)) {
             return BookingMapper.mapToBookingDto(booking);
         }
         throw new AccessRightsException("no right to find this booking");
     }
 
     @Override
-    public List<BookingDto> findAllBookingsOfBooker(Long bookerId, String state) {
+    public List<BookingDto> findAllBookingsOfBooker(Long bookerId, StateRequest state) {
         User booker = userRepository.findById(bookerId)
                 .orElseThrow(() -> new NotFoundException("booker not found"));
         List<Booking> bookings = switch (state) {
-            case "ALL" -> bookingRepository.findAllByBookerIdOrderByStartDesc(bookerId);
-            case "CURRENT" -> bookingRepository.findAllByBookerIdAndCurrentBookings(bookerId, LocalDateTime.now());
-            case "PAST" ->
+            case ALL -> bookingRepository.findAllByBookerIdOrderByStartDesc(bookerId);
+            case CURRENT -> bookingRepository.findAllByBookerIdAndCurrentBookings(bookerId, LocalDateTime.now());
+            case PAST ->
                     bookingRepository.findAllByBookerIdAndEndIsBeforeOrderByStartDesc(bookerId, LocalDateTime.now());
-            case "FUTURE" ->
+            case FUTURE ->
                     bookingRepository.findAllByBookerIdAndStartIsAfterOrderByStartDesc(bookerId, LocalDateTime.now());
-            case "WAITING" ->
+            case WAITING ->
                     bookingRepository.findAllByBookerIdAndStatusOrderByStartDesc(bookerId, BookingStatus.WAITING);
-            case "REJECTED" ->
+            case REJECTED ->
                     bookingRepository.findAllByBookerIdAndStatusOrderByStartDesc(bookerId, BookingStatus.REJECTED);
-            default -> throw new ValidationException("wrong state value");
         };
         return BookingMapper.mapToBookingDto(bookings);
     }
 
     @Override
-    public List<BookingDto> findAllBookingsOfOwner(Long ownerId, String state) {
+    public List<BookingDto> findAllBookingsOfOwner(Long ownerId, StateRequest state) {
         User booker = userRepository.findById(ownerId)
                 .orElseThrow(() -> new NotFoundException("owner not found"));
         List<Booking> bookings = switch (state) {
-            case "ALL" -> bookingRepository.findAllByItemUserIdOrderByStartDesc(ownerId);
-            case "CURRENT" -> bookingRepository.findAllByItemUserIdAndCurrentBookings(ownerId, LocalDateTime.now());
-            case "PAST" ->
+            case ALL -> bookingRepository.findAllByItemUserIdOrderByStartDesc(ownerId);
+            case CURRENT -> bookingRepository.findAllByItemUserIdAndCurrentBookings(ownerId, LocalDateTime.now());
+            case PAST ->
                     bookingRepository.findAllByItemUserIdAndEndIsBeforeOrderByStartDesc(ownerId, LocalDateTime.now());
-            case "FUTURE" ->
+            case FUTURE ->
                     bookingRepository.findAllByItemUserIdAndStartIsAfterOrderByStartDesc(ownerId, LocalDateTime.now());
-            case "WAITING" ->
+            case WAITING ->
                     bookingRepository.findAllByItemUserIdAndStatusOrderByStartDesc(ownerId, BookingStatus.WAITING);
-            case "REJECTED" ->
+            case REJECTED ->
                     bookingRepository.findAllByItemUserIdAndStatusOrderByStartDesc(ownerId, BookingStatus.REJECTED);
-            default -> throw new ValidationException("wrong state value");
         };
         return BookingMapper.mapToBookingDto(bookings);
+    }
+
+    private Boolean checkIdOfItemOwner(Booking booking, Long userId) {
+        Optional<Long> opt = Optional.ofNullable(booking.getItem().getUser().getId());
+        if (opt.isEmpty()) {
+            throw new ValidationException("something is wrong, check your parameters");
+        }
+        return userId.equals(opt.get());
     }
 }

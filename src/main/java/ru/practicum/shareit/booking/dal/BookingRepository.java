@@ -38,13 +38,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findAllByItemUserIdAndStatusOrderByStartDesc(Long bookerId, BookingStatus status);
 
     @Query("select new ru.practicum.shareit.booking.model.BookingDates(b1.item.id, max(b1.end), min(b2.start)) from Booking b1 " +
-            "inner join Booking b2 on b1.item.id = b2.item.id " +
+            "join Booking b2 on b1.item.id = b2.item.id " +
             "where b1.item.id = ?1 and (b1.status = 'APPROVED' and b1.end <= ?2) and (b2.status = 'APPROVED' and b2.start >= ?2) " +
             "group by b1.item.id")
     BookingDates findBookingDates(Long itemId, LocalDateTime time);
 
     @Query("select new ru.practicum.shareit.booking.model.BookingDates(b1.item.id, max(b1.end), min(b2.start)) from Booking b1 " +
-            "inner join Booking b2 on b1.item.id = b2.item.id " +
+            "join Booking b2 on b1.item.id = b2.item.id " +
             "where b1.item.user.id = ?1 and (b1.status = 'APPROVED' and b1.end <= ?2) and (b2.status = 'APPROVED' " +
             "and b2.start >= ?2) group by b1.item.id")
     List<BookingDates> findAllBookingsDatesOfUser(Long userId, LocalDateTime time);
