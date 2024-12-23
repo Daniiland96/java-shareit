@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import ru.practicum.shareit.user.User;
 
 /**
  * TODO Sprint add-controllers.
@@ -23,5 +22,5 @@ public class ItemDto {
     @NotBlank(message = "available cannot be null, empty or blank")
     @Pattern(regexp = "^true?$|^false?$", message = "available allowed input true or false")
     private String available;
-    private User owner;
+    private Long userId;
 }
