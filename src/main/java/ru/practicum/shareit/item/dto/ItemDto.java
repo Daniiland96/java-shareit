@@ -23,4 +23,5 @@ public class ItemDto {
     @Pattern(regexp = "^true?$|^false?$", message = "available allowed input true or false")
     private String available;
     private Long userId;
+    private Long requestId;
 }

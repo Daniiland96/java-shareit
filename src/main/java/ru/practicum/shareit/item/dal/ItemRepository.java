@@ -12,4 +12,12 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     @Query("select i from Item i where (lower(i.name) like lower(?1) " +
             "or lower(i.description) like lower(?1)) and i.available = true")
     List<Item> findByQueryText(String text);
+
+//    @Query("select new ru.practicum.shareit.item.model.DataOfItem(i.id, i.name, i.user.id) " +
+//            "from Item i where i.itemRequest.id = ?1")
+//    List<DataOfItem> findShortDataOfItemsByItemRequestId(Long itemRequestId);
+
+    List<Item> findAllByItemRequestIdIn(List<Long> requestIds);
+
+    List<Item> findAllByItemRequestId(Long requestId);
 }

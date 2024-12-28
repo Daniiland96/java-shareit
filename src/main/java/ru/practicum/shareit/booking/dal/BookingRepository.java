@@ -37,16 +37,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findAllByItemUserIdAndStatusOrderByStartDesc(Long bookerId, BookingStatus status);
 
-    @Query("select new ru.practicum.shareit.booking.model.BookingDates(b1.item.id, max(b1.end), min(b2.start)) from Booking b1 " +
-            "join Booking b2 on b1.item.id = b2.item.id " +
-            "where b1.item.id = ?1 and (b1.status = 'APPROVED' and b1.end <= ?2) and (b2.status = 'APPROVED' and b2.start >= ?2) " +
-            "group by b1.item.id")
+    @Query("select new ru.practicum.shareit.booking.model.BookingDates(b1.item.id, max(b3.end), min(b2.start)) from Booking b1 " +
+            "left join Booking b2 on b1.item.id = b2.item.id " +
+            "and (b2.status = 'APPROVED' and b2.start >= ?2) " +
+            "left join Booking b3 on b1.item.id = b3.item.id " +
+            "and (b3.status = 'APPROVED' and b3.end <= ?2) " +
+            "where b1.item.id = ?1 group by b1.item.id")
     BookingDates findBookingDates(Long itemId, LocalDateTime time);
 
-    @Query("select new ru.practicum.shareit.booking.model.BookingDates(b1.item.id, max(b1.end), min(b2.start)) from Booking b1 " +
-            "join Booking b2 on b1.item.id = b2.item.id " +
-            "where b1.item.user.id = ?1 and (b1.status = 'APPROVED' and b1.end <= ?2) and (b2.status = 'APPROVED' " +
-            "and b2.start >= ?2) group by b1.item.id")
+    @Query("select new ru.practicum.shareit.booking.model.BookingDates(b1.item.id, max(b3.end), min(b2.start)) from Booking b1 " +
+            "left join Booking b2 on b1.item.id = b2.item.id " +
+            "and (b2.status = 'APPROVED' and b2.start >= ?2) " +
+            "left join Booking b3 on b1.item.id = b3.item.id " +
+            "and (b3.status = 'APPROVED' and b3.end <= ?2) " +
+            "where b1.item.user.id = ?1 group by b1.item.id")
     List<BookingDates> findAllBookingsDatesOfUser(Long userId, LocalDateTime time);
 
     List<Booking> findAllByBookerIdAndItemIdAndStatusAndEndIsBefore(Long bookerId, Long itemId, BookingStatus status, LocalDateTime time);

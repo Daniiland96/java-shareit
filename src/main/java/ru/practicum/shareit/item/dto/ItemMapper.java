@@ -2,6 +2,7 @@ package ru.practicum.shareit.item.dto;
 
 import ru.practicum.shareit.booking.model.BookingDates;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.User;
 
 import java.util.ArrayList;
@@ -19,7 +20,8 @@ public class ItemMapper {
                 item.getName(),
                 item.getDescription(),
                 item.getAvailable().toString(),
-                item.getUser().getId()
+                item.getUser().getId(),
+                item.getItemRequest() != null ? item.getItemRequest().getId() : null
         );
     }
 
@@ -31,13 +33,14 @@ public class ItemMapper {
         return dtos;
     }
 
-    public static Item mapToItem(ItemDto itemDto, User user) {
+    public static Item mapToItem(ItemDto itemDto, User user, ItemRequest itemRequest) {
         return new Item(
                 itemDto.getId(),
                 itemDto.getName(),
                 itemDto.getDescription(),
                 Boolean.valueOf(itemDto.getAvailable()),
-                user
+                user,
+                itemRequest
         );
     }
 
@@ -63,6 +66,7 @@ public class ItemMapper {
         dto.setUserId(item.getUser().getId());
         dto.setLastBooking(dates != null ? dates.getLastBooking() : null);
         dto.setNextBooking(dates != null ? dates.getNextBooking() : null);
+        dto.setRequestId(item.getItemRequest() != null ? item.getItemRequest().getId() : null);
         return dto;
     }
 
@@ -76,6 +80,7 @@ public class ItemMapper {
         dto.setLastBooking(dates != null ? dates.getLastBooking() : null);
         dto.setNextBooking(dates != null ? dates.getNextBooking() : null);
         dto.setComments(comments != null ? comments : new ArrayList<>());
+        dto.setRequestId(item.getItemRequest() != null ? item.getItemRequest().getId() : null);
         return dto;
     }
 
@@ -98,11 +103,7 @@ public class ItemMapper {
 
         Map<Long, List<CommentDto>> commentMap = new HashMap<>();
         for (CommentDto dto : comments) {
-            commentMap.merge(dto.getItemId(), List.of(dto), (oldList, newList) -> {
-                List<CommentDto> resultList = new ArrayList<>(oldList);
-                resultList.addAll(newList);
-                return resultList;
-            });
+            commentMap.computeIfAbsent(dto.getItemId(), itemId -> new ArrayList<>()).add(dto);
         }
 
         Map<Long, BookingDates> dates = listDates.stream()
