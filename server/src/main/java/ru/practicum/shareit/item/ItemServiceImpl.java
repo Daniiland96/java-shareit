@@ -107,7 +107,7 @@ public class ItemServiceImpl implements ItemService {
         User booker = userRepository.findById(bookerId)
                 .orElseThrow(() -> new NotFoundException("user not found"));
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("user not found"));
+                .orElseThrow(() -> new NotFoundException("item not found"));
         List<Booking> bookings = bookingRepository
                 .findAllByBookerIdAndItemIdAndStatusAndEndIsBefore(bookerId, itemId, BookingStatus.APPROVED, LocalDateTime.now());
         if (bookings.isEmpty()) {
