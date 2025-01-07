@@ -10,7 +10,9 @@ import ru.practicum.shareit.booking.BookingService;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.CreateBookingDto;
 import ru.practicum.shareit.booking.model.BookingStatus;
+import ru.practicum.shareit.exception.AccessRightsException;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.*;
 import ru.practicum.shareit.request.ItemRequestService;
 import ru.practicum.shareit.request.dto.CreateItemRequestDto;
@@ -108,6 +110,17 @@ public class ItemServiceTest {
     }
 
     @Test
+    void updateByNoUser() {
+        updateItemRequest = new UpdateItemRequest();
+        updateItemRequest.setName("Update");
+        updateItemRequest.setDescription("Update item");
+        updateItemRequest.setAvailable("false");
+
+        AccessRightsException exception = assertThrows(AccessRightsException.class, () -> itemService.update(999L, item.getId(), updateItemRequest));
+        assertThat(exception.getMessage(), equalTo("no rights to update item"));
+    }
+
+    @Test
     void updateName() {
         updateItemRequest = new UpdateItemRequest();
         updateItemRequest.setName("Update");
@@ -162,10 +175,23 @@ public class ItemServiceTest {
     }
 
     @Test
+    void findByEmptyQueryText() {
+        List<ItemDto> result = (List<ItemDto>) itemService.findByQueryText("");
+        assertThat(result, notNullValue());
+        assertThat(result.size(), equalTo(0));
+    }
+
+    @Test
     void delete() {
         itemService.delete(owner.getId(), item.getId());
         NotFoundException exception = assertThrows(NotFoundException.class, () -> itemService.findItemById(item.getId()));
         assertThat(exception.getMessage(), equalTo("item not found"));
+    }
+
+    @Test
+    void deleteByNoUser() {
+        AccessRightsException exception = assertThrows(AccessRightsException.class, () -> itemService.delete(999L, item.getId()));
+        assertThat(exception.getMessage(), equalTo("no rights to delete item"));
     }
 
     @Test
@@ -188,5 +214,23 @@ public class ItemServiceTest {
         assertThat(commentDto.getItemId(), equalTo(item.getId()));
         assertThat(commentDto.getAuthorName(), equalTo(booker.getName()));
         assertThat(commentDto.getCreated(), notNullValue());
+    }
+
+    @Test
+    void addCommentByNotBooking() throws InterruptedException {
+        UserDto booker = new UserDto(null, "Booker", "booker@yandex.ru");
+        booker = userService.create(booker);
+        CreateBookingDto createBookingDto = new CreateBookingDto(null, LocalDateTime.now().plusSeconds(1),
+                LocalDateTime.now().plusSeconds(2), item.getId(), BookingStatus.WAITING);
+        BookingDto bookingDto = bookingService.create(booker.getId(), createBookingDto);
+
+        TimeUnit.SECONDS.sleep(3);
+
+        CreateCommentDto createCommentDto = new CreateCommentDto();
+        createCommentDto.setText("Good item");
+
+        UserDto finalBooker = booker;
+        ValidationException exception = assertThrows(ValidationException.class, () -> itemService.addComment(finalBooker.getId(), item.getId(), createCommentDto));
+        assertThat(exception.getMessage(), equalTo("user did not booking the item"));
     }
 }

@@ -19,7 +19,8 @@ import java.util.List;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 @WebMvcTest(controllers = ItemController.class)
@@ -113,7 +114,10 @@ public class ItemControllerTest {
                 .andExpect(jsonPath("$.nextBooking",
                         is(withDateDto.getNextBooking().truncatedTo(ChronoUnit.SECONDS).toString())))
                 .andExpect(jsonPath("$.comments.length()").value(1))
+                .andExpect(jsonPath("$.comments[0].id").isNumber())
                 .andExpect(jsonPath("$.comments[0].text", is(commentDto.getText())))
+                .andExpect(jsonPath("$.comments[0].itemId", is(commentDto.getItemId()), Long.class))
+                .andExpect(jsonPath("$.comments[0].authorName", is(commentDto.getAuthorName())))
                 .andExpect(jsonPath("$.requestId", is(withDateDto.getRequestId()), Long.class));
     }
 
@@ -129,7 +133,16 @@ public class ItemControllerTest {
                         .header("X-Sharer-User-Id", withDateDto.getUserId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].name", is(withDateDto.getName())));
+                .andExpect(jsonPath("$[0].name", is(withDateDto.getName())))
+                .andExpect(jsonPath("$[0].description", is(withDateDto.getDescription())))
+                .andExpect(jsonPath("$[0].available", is(withDateDto.getAvailable())))
+                .andExpect(jsonPath("$[0].userId", is(withDateDto.getUserId()), Long.class))
+                .andExpect(jsonPath("$[0].lastBooking",
+                        is(withDateDto.getLastBooking().truncatedTo(ChronoUnit.SECONDS).toString())))
+                .andExpect(jsonPath("$[0].nextBooking",
+                        is(withDateDto.getNextBooking().truncatedTo(ChronoUnit.SECONDS).toString())))
+                .andExpect(jsonPath("$[0].comments[0].text", is(commentDto.getText())))
+                .andExpect(jsonPath("$[0].requestId", is(withDateDto.getRequestId()), Long.class));
     }
 
     @Test
@@ -145,7 +158,11 @@ public class ItemControllerTest {
                         .header("X-Sharer-User-Id", withDateDto.getUserId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].name", is(dto.getName())));
+                .andExpect(jsonPath("$[0].name", is(dto.getName())))
+                .andExpect(jsonPath("$[0].description", is(dto.getDescription())))
+                .andExpect(jsonPath("$[0].available", is(dto.getAvailable())))
+                .andExpect(jsonPath("$[0].userId", is(dto.getUserId()), Long.class))
+                .andExpect(jsonPath("$[0].requestId", is(dto.getRequestId()), Long.class));
     }
 
     @Test

@@ -46,7 +46,7 @@ public class ItemRequestControllerTest {
         dto.setId(1L);
         dto.setDescription("ItemRequest controller testing");
         dto.setRequestorId(1L);
-        dto.setCreated(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS));
+        dto.setCreated(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
 
         dataOfItem = new DataOfItem();
         dataOfItem.setItemId(2L);
@@ -57,7 +57,7 @@ public class ItemRequestControllerTest {
         withItemsDto.setId(1L);
         withItemsDto.setDescription("ItemRequest controller testing");
         withItemsDto.setRequestorId(1L);
-        withItemsDto.setCreated(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS));
+        withItemsDto.setCreated(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
         withItemsDto.setItems(List.of(dataOfItem));
     }
 
@@ -77,7 +77,7 @@ public class ItemRequestControllerTest {
                 .andExpect(jsonPath("$.id", is(dto.getId()), Long.class))
                 .andExpect(jsonPath("$.description", is(dto.getDescription())))
                 .andExpect(jsonPath("$.requestorId", is(dto.getRequestorId()), Long.class))
-                .andExpect(jsonPath("$.created", is(dto.getCreated().truncatedTo(ChronoUnit.MILLIS).toString())));
+                .andExpect(jsonPath("$.created", is(dto.getCreated().truncatedTo(ChronoUnit.SECONDS).toString())));
     }
 
     @Test
@@ -118,7 +118,7 @@ public class ItemRequestControllerTest {
                 .andExpect(jsonPath("$.id", is(withItemsDto.getId()), Long.class))
                 .andExpect(jsonPath("$.description", is(withItemsDto.getDescription())))
                 .andExpect(jsonPath("$.requestorId", is(withItemsDto.getRequestorId()), Long.class))
-                .andExpect(jsonPath("$.created", is(withItemsDto.getCreated().truncatedTo(ChronoUnit.MILLIS).toString())))
+                .andExpect(jsonPath("$.created", is(withItemsDto.getCreated().truncatedTo(ChronoUnit.SECONDS).toString())))
                 .andExpect(jsonPath("$.items.length()").value(1));
     }
 }
