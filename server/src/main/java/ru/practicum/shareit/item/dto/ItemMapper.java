@@ -57,21 +57,6 @@ public class ItemMapper {
         return item;
     }
 
-    public static ItemWithDateDto mapToItemWithDateDto(Item item, BookingDates dates) {
-        ItemWithDateDto dto = new ItemWithDateDto();
-        dto.setId(item.getId());
-        dto.setName(item.getName());
-        dto.setDescription(item.getDescription());
-        dto.setAvailable(item.getAvailable());
-        dto.setUserId(item.getUser().getId());
-//        dto.setLastBooking(dates != null ? dates.getLastBooking() : null); // правильное решение
-//        dto.setNextBooking(dates != null ? dates.getNextBooking() : null); // правильное решение
-        dto.setLastBooking(null); // решение для postman
-        dto.setNextBooking(null); // решение для postman
-        dto.setRequestId(item.getItemRequest() != null ? item.getItemRequest().getId() : null);
-        return dto;
-    }
-
     public static ItemWithDateDto mapToItemWithDateDto(Item item, BookingDates dates, List<CommentDto> comments) {
         ItemWithDateDto dto = new ItemWithDateDto();
         dto.setId(item.getId());
@@ -86,16 +71,6 @@ public class ItemMapper {
         dto.setComments(comments != null ? comments : new ArrayList<>());
         dto.setRequestId(item.getItemRequest() != null ? item.getItemRequest().getId() : null);
         return dto;
-    }
-
-    public static List<ItemWithDateDto> mapToItemWithDateDto(List<Item> items, List<BookingDates> listDates) {
-        List<ItemWithDateDto> result = new ArrayList<>();
-        Map<Long, BookingDates> dates = listDates.stream()
-                .collect(Collectors.toMap(BookingDates::getItemId, Function.identity()));
-        for (Item item : items) {
-            result.add(mapToItemWithDateDto(item, dates.get(item.getId())));
-        }
-        return result;
     }
 
     public static List<ItemWithDateDto> mapToItemWithDateDto(

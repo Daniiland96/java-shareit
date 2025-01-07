@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.user.dto.UpdateUserRequest;
@@ -57,6 +58,13 @@ public class UserServiceTest {
         assertThat(result.getId(), notNullValue());
         assertThat(result.getName(), equalTo(userDto.getName()));
         assertThat(result.getEmail(), equalTo(userDto.getEmail()));
+    }
+
+    @Test
+    void createWithDuplicateEmail() {
+        userDto.setId(null);
+        DataIntegrityViolationException exception = assertThrows(DataIntegrityViolationException.class,
+                () -> userService.create(userDto));
     }
 
     @Test

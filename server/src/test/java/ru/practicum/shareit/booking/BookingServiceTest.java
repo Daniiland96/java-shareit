@@ -10,7 +10,9 @@ import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.CreateBookingDto;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.model.StateRequest;
+import ru.practicum.shareit.exception.AccessRightsException;
 import ru.practicum.shareit.exception.DuplicateDataException;
+import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.ItemService;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -93,14 +95,70 @@ public class BookingServiceTest {
     }
 
     @Test
-    void updateStatus() {
+    void updateStatusToApproved() {
         assertThat(booking.getStatus(), equalTo(BookingStatus.WAITING));
         booking = bookingService.updateStatus(owner.getId(), booking.getId(), true);
         assertThat(booking.getStatus(), equalTo(BookingStatus.APPROVED));
     }
 
     @Test
-    void findAllBookingsOfBooker() {
+    void updateStatusToRejected() {
+        assertThat(booking.getStatus(), equalTo(BookingStatus.WAITING));
+        booking = bookingService.updateStatus(owner.getId(), booking.getId(), false);
+        assertThat(booking.getStatus(), equalTo(BookingStatus.REJECTED));
+    }
+
+    @Test
+    void updateStatusToCanceled() {
+        assertThat(booking.getStatus(), equalTo(BookingStatus.WAITING));
+        booking = bookingService.updateStatus(booker.getId(), booking.getId(), false);
+        assertThat(booking.getStatus(), equalTo(BookingStatus.CANCELED));
+    }
+
+    @Test
+    void updateStatusWithOverlappingBooking() {
+        createBookingDto.setStatus(BookingStatus.APPROVED);
+        bookingService.create(booker.getId(), createBookingDto);
+        DuplicateDataException exception = assertThrows(DuplicateDataException.class,
+                () -> bookingService.updateStatus(owner.getId(), booking.getId(), true));
+        assertThat(exception.getMessage(), equalTo("overlapping bookings"));
+    }
+
+    @Test
+    void updateStatusByNotExistUser() {
+        AccessRightsException exception = assertThrows(AccessRightsException.class,
+                () -> bookingService.updateStatus(999L, booking.getId(), true));
+        assertThat(exception.getMessage(), equalTo("no right to update booking"));
+    }
+
+    @Test
+    void findById() {
+        BookingDto result = bookingService.findById(owner.getId(), booking.getId());
+        assertThat(result, notNullValue());
+        assertThat(result.getId(), notNullValue());
+        assertThat(result.getStart(), equalTo(createBookingDto.getStart()));
+        assertThat(result.getEnd(), equalTo(createBookingDto.getEnd()));
+        assertThat(result.getItem().getName(), equalTo(item.getName()));
+        assertThat(result.getBooker().getName(), equalTo(booker.getName()));
+        assertThat(result.getStatus(), equalTo(BookingStatus.WAITING));
+    }
+
+    @Test
+    void findByIdNotExistBooking() {
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> bookingService.findById(booker.getId(), 999L));
+        assertThat(exception.getMessage(), equalTo("booking not found"));
+    }
+
+    @Test
+    void findByIdNotUserBooking() {
+        AccessRightsException exception = assertThrows(AccessRightsException.class,
+                () -> bookingService.findById(999L, booking.getId()));
+        assertThat(exception.getMessage(), equalTo("no right to find this booking"));
+    }
+
+    @Test
+    void findAllBookingsOfBookerWithStateAll() {
         List<BookingDto> bookings = bookingService.findAllBookingsOfBooker(booker.getId(), StateRequest.ALL);
         assertThat(bookings, notNullValue());
         assertThat(bookings.size(), equalTo(1));
@@ -108,10 +166,84 @@ public class BookingServiceTest {
     }
 
     @Test
-    void findAllBookingsOfOwner() {
+    void findAllBookingsOfBookerWithStateCurrent() {
+        List<BookingDto> bookings = bookingService.findAllBookingsOfBooker(booker.getId(), StateRequest.CURRENT);
+        assertThat(bookings, notNullValue());
+        assertThat(bookings.size(), equalTo(0));
+    }
+
+    @Test
+    void findAllBookingsOfBookerWithStatePast() {
+        List<BookingDto> bookings = bookingService.findAllBookingsOfBooker(booker.getId(), StateRequest.PAST);
+        assertThat(bookings, notNullValue());
+        assertThat(bookings.size(), equalTo(0));
+    }
+
+    @Test
+    void findAllBookingsOfBookerWithStateFuture() {
+        List<BookingDto> bookings = bookingService.findAllBookingsOfBooker(booker.getId(), StateRequest.FUTURE);
+        assertThat(bookings, notNullValue());
+        assertThat(bookings.size(), equalTo(1));
+        assertThat(bookings.getFirst().getId(), equalTo(booking.getId()));
+    }
+
+    @Test
+    void findAllBookingsOfBookerWithStateWaiting() {
+        List<BookingDto> bookings = bookingService.findAllBookingsOfBooker(booker.getId(), StateRequest.WAITING);
+        assertThat(bookings, notNullValue());
+        assertThat(bookings.size(), equalTo(1));
+        assertThat(bookings.getFirst().getId(), equalTo(booking.getId()));
+    }
+
+    @Test
+    void findAllBookingsOfBookerWithStateRejected() {
+        List<BookingDto> bookings = bookingService.findAllBookingsOfBooker(booker.getId(), StateRequest.REJECTED);
+        assertThat(bookings, notNullValue());
+        assertThat(bookings.size(), equalTo(0));
+    }
+
+    @Test
+    void findAllBookingsOfOwnerWithStateAll() {
         List<BookingDto> bookings = bookingService.findAllBookingsOfOwner(owner.getId(), StateRequest.ALL);
         assertThat(bookings, notNullValue());
         assertThat(bookings.size(), equalTo(1));
         assertThat(bookings.getFirst().getId(), equalTo(booking.getId()));
+    }
+
+    @Test
+    void findAllBookingsOfOwnerWithStateCurrent() {
+        List<BookingDto> bookings = bookingService.findAllBookingsOfOwner(owner.getId(), StateRequest.CURRENT);
+        assertThat(bookings, notNullValue());
+        assertThat(bookings.size(), equalTo(0));
+    }
+
+    @Test
+    void findAllBookingsOfOwnerWithStatePast() {
+        List<BookingDto> bookings = bookingService.findAllBookingsOfOwner(owner.getId(), StateRequest.PAST);
+        assertThat(bookings, notNullValue());
+        assertThat(bookings.size(), equalTo(0));
+    }
+
+    @Test
+    void findAllBookingsOfOwnerWithStateFuture() {
+        List<BookingDto> bookings = bookingService.findAllBookingsOfOwner(owner.getId(), StateRequest.FUTURE);
+        assertThat(bookings, notNullValue());
+        assertThat(bookings.size(), equalTo(1));
+        assertThat(bookings.getFirst().getId(), equalTo(booking.getId()));
+    }
+
+    @Test
+    void findAllBookingsOfOwnerWithStateWaiting() {
+        List<BookingDto> bookings = bookingService.findAllBookingsOfOwner(owner.getId(), StateRequest.WAITING);
+        assertThat(bookings, notNullValue());
+        assertThat(bookings.size(), equalTo(1));
+        assertThat(bookings.getFirst().getId(), equalTo(booking.getId()));
+    }
+
+    @Test
+    void findAllBookingsOfOwnerWithStateRejected() {
+        List<BookingDto> bookings = bookingService.findAllBookingsOfOwner(owner.getId(), StateRequest.REJECTED);
+        assertThat(bookings, notNullValue());
+        assertThat(bookings.size(), equalTo(0));
     }
 }
