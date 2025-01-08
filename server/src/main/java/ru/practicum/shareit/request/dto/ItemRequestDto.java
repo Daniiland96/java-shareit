@@ -7,10 +7,6 @@ import lombok.ToString;
 
 import java.time.LocalDateTime;
 
-/**
- * TODO Sprint add-item-requests.
- */
-
 @ToString
 @EqualsAndHashCode
 @Getter
