@@ -4,7 +4,7 @@ services:
     image: postgres:16.1
     container_name: postgres
     ports:
-      - "5433:5432"
+      - "6542:5432"
     environment:
       - POSTGRES_PASSWORD=shareit
       - POSTGRES_USER=shareit
@@ -24,7 +24,7 @@ services:
     depends_on:
       - db
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5433/shareit
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/shareit
       - SPRING_DATASOURCE_USERNAME=shareit
       - SPRING_DATASOURCE_PASSWORD=shareit
 
